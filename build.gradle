@@ -1,0 +1,99 @@
+buildscript {
+    dependencies {
+        classpath 'org.postgresql:postgresql:42.2.6'
+    }
+}
+
+plugins {
+    id "org.flywaydb.flyway" version "9.22.0"
+}
+
+flyway {
+    url = "jdbc:postgresql://${dbHost}/${dbName}"
+    locations = [
+            'filesystem:src/main/sql'
+    ]
+}
+
+task migrateTestDbDocker(type: org.flywaydb.gradle.task.FlywayMigrateTask, dependsOn: 'bringUpTestDbDocker') {
+    description 'Apply main migrations to the test database in Docker'
+    url = "jdbc:postgresql://localhost:15432/${dbName}"
+    user = 'postgres'
+    password = 'password'
+}
+
+task applyTestMigrations(type: org.flywaydb.gradle.task.FlywayMigrateTask, dependsOn: 'migrateTestDbDocker') {
+    description 'Apply both main and test migrations to the test database in Docker'
+    url = "jdbc:postgresql://localhost:15432/${dbName}"
+    user = 'postgres'
+    password = 'password'
+    locations = [
+            'filesystem:src/main/sql',
+            'filesystem:src/test/sql'
+    ]
+}
+
+task infoTestDbDocker(type: org.flywaydb.gradle.task.FlywayInfoTask, dependsOn: 'bringUpTestDbDocker') {
+    description 'Show the status of both main and test migrations to the test database in Docker'
+    url = "jdbc:postgresql://localhost:15432/${dbName}"
+    user = 'postgres'
+    password = 'password'
+    locations = [
+            'filesystem:src/main/sql',
+            'filesystem:src/test/sql'
+    ]
+}
+
+task repairTestDbDocker(type: org.flywaydb.gradle.task.FlywayRepairTask, dependsOn: 'bringUpTestDbDocker') {
+    description 'Repair both main and test migrations to the test database in Docker'
+    url = "jdbc:postgresql://localhost:15432/${dbName}"
+    user = 'postgres'
+    password = 'password'
+    locations = [
+            'filesystem:src/main/sql',
+            'filesystem:src/test/sql'
+    ]
+}
+
+task buildTestDbDocker(type: Exec) {
+    description 'Build the test database Docker image'
+    workingDir 'src/test/docker'
+    executable 'docker-compose'
+    args = ['build'] + (System.env.BUILD_ARGS != null ? System.env.BUILD_ARGS : "").tokenize(" ")
+}
+
+task bringUpTestDbDocker(type: Exec, dependsOn: 'buildTestDbDocker') {
+    description 'Bring up the test database Docker container'
+    workingDir 'src/test/docker'
+    executable 'docker-compose'
+    args = ['-p', 'test-db', 'up', '-d', '--build']
+    doLast {
+        sleep(2000)
+    }
+}
+
+task bringDownTestDbDocker(type: Exec) {
+    description 'Bring down the test database Docker container'
+    workingDir 'src/test/docker'
+    executable 'docker-compose'
+    args = ['-p', 'test-db', 'down']
+}
+
+task waitForTestDbDocker() {
+    description 'Wait for the test database Docker container to come up'
+    doFirst {
+        println "waiting for Postgres to come up"
+        ant.waitfor(
+                maxwait: "30", maxwaitunit: "second",
+                checkevery: "500", checkeveryunit: "millisecond"
+        ) {
+            socket(server: "localhost", port: "15432")
+        }
+    }
+}
+
+task test dependsOn applyTestMigrations
+
+task clean dependsOn bringDownTestDbDocker
+
+bringUpTestDbDocker.finalizedBy waitForTestDbDocker
