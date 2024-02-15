@@ -15,9 +15,17 @@ CREATE TABLE app_security.role
 CREATE TABLE app_security.user_credentials
 (
     user_credentials_id INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    customer_id         INT         NOT NULL REFERENCES shared.customer (customer_id),
-    role_id             INT         NOT NULL REFERENCES app_security.role (role_id),
+    customer_id         INT         NOT NULL REFERENCES shared.customer,
+    role_id             INT         NOT NULL REFERENCES app_security.role,
     email               TEXT        NOT NULL UNIQUE,
-    password            VARCHAR(72) NOT NULL,
-    phone_number        TEXT
+    password            VARCHAR(72) NOT NULL
+);
+
+CREATE TABLE app_security.token
+(
+    token_id            BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    user_credentials_id INT     NOT NULL REFERENCES app_security.user_credentials,
+    jwt                 TEXT    NOT NULL UNIQUE,
+    is_revoked          BOOLEAN NOT NULL,
+    is_expired          BOOLEAN NOT NULL
 );
