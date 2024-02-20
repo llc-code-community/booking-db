@@ -1,6 +1,7 @@
 SET ROLE postgres;
 
 CREATE SCHEMA app_security;
+CREATE ROLE booking_app;
 
 GRANT USAGE ON SCHEMA app_security TO reader;
 ALTER DEFAULT PRIVILEGES IN SCHEMA app_security GRANT SELECT ON TABLES TO reader;
