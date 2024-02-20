@@ -8,13 +8,12 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA app_hotel GRANT ALL ON TABLES TO booking_app;
 
 CREATE TABLE app_hotel.hotel
 (
-    hotel_id   INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    name       TEXT NOT NULL UNIQUE,
+    hotel_id    INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    name        TEXT NOT NULL UNIQUE,
     description TEXT,
-    address    TEXT NOT NULL,
-    star_rating INT NOT NULL,
+    address     TEXT NOT NULL,
     latitude    DOUBLE PRECISION NOT NULL,
-    longitude    DOUBLE PRECISION NOT NULL
+    longitude   DOUBLE PRECISION NOT NULL
 );
 
 CREATE TABLE app_hotel.rental_object_type
